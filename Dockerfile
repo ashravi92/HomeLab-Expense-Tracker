@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source code and build app
 COPY . .
@@ -20,7 +20,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copy compiled outputs from builder
 COPY --from=builder /app/dist ./dist
