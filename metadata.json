@@ -1,0 +1,6 @@
+{
+  "name": "Homelab Spend Tracker",
+  "description": "Self-hosted spend and budget tracking application with CSV auto-categorization, local authentication, interactive charts, monthly budget reports, and Docker export configuration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
