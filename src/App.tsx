@@ -19,6 +19,7 @@ import { RulesView } from './components/RulesView';
 import { ReportsView } from './components/ReportsView';
 import { DockerView } from './components/DockerView';
 import { SettingsView } from './components/SettingsView';
+import { SimpleFinView } from './components/SimpleFinView';
 import { QuickAddModal } from './components/QuickAddModal';
 import { AuthModal } from './components/AuthModal';
 
@@ -241,6 +242,17 @@ export default function App() {
               onDeleteTransaction={handleDeleteTransaction}
               onBulkDelete={handleBulkDeleteTransactions}
               onBulkCategoryChange={handleBulkCategoryChange}
+            />
+          )}
+
+          {activeTab === 'simplefin' && (
+            <SimpleFinView
+              settings={settings}
+              rules={rules}
+              categories={categories}
+              existingTransactions={transactions}
+              onUpdateSettings={handleUpdateSettings}
+              onImportTransactions={handleConfirmCSVImport}
             />
           )}
 

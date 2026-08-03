@@ -86,6 +86,43 @@ export interface UserSettings {
   themeMode: 'dark' | 'light' | 'system';
   autoRunAIOnImport: boolean;
   autoSaveSession: boolean;
+  simpleFinAccessUrl?: string;
+  simpleFinLastSync?: string;
+  simpleFinAutoSyncDays?: number;
+}
+
+export interface SimpleFinAccount {
+  id: string;
+  name: string;
+  currency: string;
+  balance: string;
+  'available-balance'?: string;
+  'balance-date'?: number;
+  org?: {
+    name?: string;
+    id?: string;
+    sorg?: string;
+    url?: string;
+  };
+  transactions?: SimpleFinTransaction[];
+}
+
+export interface SimpleFinTransaction {
+  id: string;
+  posted: number; // Unix timestamp in seconds
+  amount: string; // Negative = outflow/expense, Positive = inflow/income
+  description: string;
+  payee?: string;
+  memo?: string;
+  pending?: boolean;
+}
+
+export interface SimpleFinSyncResult {
+  success: boolean;
+  accounts: SimpleFinAccount[];
+  importedTransactions: Transaction[];
+  duplicateCount: number;
+  errors?: string[];
 }
 
 export interface MonthlyReport {

@@ -3,6 +3,7 @@ import {
   LayoutDashboard, 
   ReceiptText, 
   UploadCloud, 
+  Landmark,
   PieChart, 
   Zap, 
   FileSpreadsheet, 
@@ -30,7 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transactions', icon: ReceiptText, badge: uncategorizedCount > 0 ? uncategorizedCount : undefined },
-    { id: 'import', label: 'CSV Import', icon: UploadCloud, highlight: true },
+    { id: 'simplefin', label: 'SimpleFIN Sync', icon: Landmark, highlight: true },
+    { id: 'import', label: 'CSV Import', icon: UploadCloud },
     { id: 'budgets', label: 'Budget Limits', icon: PieChart },
     { id: 'rules', label: 'Auto-Rules', icon: Zap },
     { id: 'reports', label: 'Monthly Reports', icon: FileSpreadsheet },

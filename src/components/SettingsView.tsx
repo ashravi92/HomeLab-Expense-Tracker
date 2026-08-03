@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Lock, Shield, Key, Download, Upload, RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { Settings, Lock, Shield, Key, Download, Upload, RefreshCw, Check, AlertCircle, Landmark } from 'lucide-react';
 import { UserSettings } from '../types';
 import { StorageService } from '../lib/storage';
 
@@ -88,6 +88,48 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <p className="text-xs sm:text-sm text-slate-400 mt-1">
           Configure local session security, currency formatting, and homelab data backups
         </p>
+      </div>
+
+      {/* SimpleFIN Bridge Bank Sync Integration */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-bold text-slate-100">
+            <Landmark className="w-4 h-4 text-cyan-400" /> SimpleFIN Bridge Integration
+          </div>
+          <span className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded-full border ${
+            settings.simpleFinAccessUrl 
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+          }`}>
+            {settings.simpleFinAccessUrl ? 'Connected' : 'Not Connected'}
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Automate bank transactions import using the open SimpleFIN protocol. Connect checking, savings, and credit cards safely without sharing credentials with third parties.
+        </p>
+
+        {settings.simpleFinAccessUrl ? (
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <div>
+              <div className="text-slate-200 font-medium">Access URL Configured</div>
+              <div className="text-[11px] text-slate-400">Last Synced: {settings.simpleFinLastSync || 'Never'}</div>
+            </div>
+            <button
+              onClick={() => {
+                onUpdateSettings({ ...settings, simpleFinAccessUrl: undefined });
+              }}
+              className="text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20 transition"
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <span className="text-slate-400">SimpleFIN is not connected yet.</span>
+            <span className="text-indigo-400 font-semibold">Use SimpleFIN Sync tab to pair</span>
+          </div>
+        )}
       </div>
 
       {/* Security & Lock Settings */}

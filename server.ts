@@ -199,6 +199,260 @@ HOMELAB_MASTER_PASSWORD=change_this_password
   });
 });
 
+// SimpleFIN Bridge API Integration Endpoints
+
+// 1. Claim Setup Token -> Access URL
+app.post("/api/simplefin/claim", async (req, res) => {
+  try {
+    const { claimToken } = req.body;
+    if (!claimToken || typeof claimToken !== "string") {
+      return res.status(400).json({ error: "Missing or invalid claim token." });
+    }
+
+    const tokenInput = claimToken.trim();
+
+    // Support Demo Token
+    if (tokenInput.toLowerCase().includes("demo")) {
+      return res.json({
+        success: true,
+        accessUrl: "demo://simplefin-bridge-access-url",
+        message: "Demo SimpleFIN connection activated!",
+      });
+    }
+
+    // Decode setup token if base64 encoded
+    let claimUrl = tokenInput;
+    if (!tokenInput.startsWith("http://") && !tokenInput.startsWith("https://")) {
+      try {
+        const decoded = Buffer.from(tokenInput, "base64").toString("utf8").trim();
+        if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+          claimUrl = decoded;
+        }
+      } catch (e) {
+        // failed base64 decode, continue with raw input
+      }
+    }
+
+    if (!claimUrl.startsWith("http://") && !claimUrl.startsWith("https://")) {
+      return res.status(400).json({
+        error: "Invalid setup token format. Expected a SimpleFIN claim URL or Base64 encoded token.",
+      });
+    }
+
+    console.log(`[SimpleFIN] Claiming setup token at: ${claimUrl}`);
+
+    // Send POST request to SimpleFIN claim URL
+    const response = await fetch(claimUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      return res.status(response.status).json({
+        error: `SimpleFIN claim failed (${response.status}): ${errText || response.statusText}`,
+      });
+    }
+
+    const accessUrl = (await response.text()).trim();
+
+    if (!accessUrl || (!accessUrl.startsWith("http://") && !accessUrl.startsWith("https://"))) {
+      return res.status(500).json({
+        error: "SimpleFIN bridge returned an invalid access URL string.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      accessUrl,
+      message: "SimpleFIN access token claimed successfully!",
+    });
+  } catch (error: any) {
+    console.error("SimpleFIN claim error:", error);
+    return res.status(500).json({
+      error: "Internal server error while claiming SimpleFIN token",
+      details: error.message || String(error),
+    });
+  }
+});
+
+// 2. Fetch Accounts & Transactions using Access URL
+app.post("/api/simplefin/accounts", async (req, res) => {
+  try {
+    let accessUrl = req.body.accessUrl || process.env.SIMPLEFIN_ACCESS_URL;
+
+    if (!accessUrl || typeof accessUrl !== "string") {
+      return res.status(400).json({
+        error: "No SimpleFIN Access URL provided or set in environment.",
+      });
+    }
+
+    accessUrl = accessUrl.trim();
+
+    // Demo Mode Simulation
+    if (accessUrl.startsWith("demo://")) {
+      const now = Math.floor(Date.now() / 1000);
+      const daySec = 86400;
+      return res.json({
+        success: true,
+        errors: [],
+        accounts: [
+          {
+            id: "demo-chase-checking",
+            name: "Homelab Primary Checking",
+            currency: "USD",
+            balance: "4850.42",
+            "available-balance": "4850.42",
+            "balance-date": now,
+            org: { name: "Chase Bank", id: "chase" },
+            transactions: [
+              {
+                id: `demo-tx-1`,
+                posted: now - daySec * 1,
+                amount: "-84.50",
+                description: "COSTCO WHOLESALE #108",
+                payee: "Costco Wholesale",
+                memo: "Groceries & Supplies",
+                pending: false,
+              },
+              {
+                id: `demo-tx-2`,
+                posted: now - daySec * 2,
+                amount: "-14.99",
+                description: "HETZNER ONLINE SERVER",
+                payee: "Hetzner Cloud",
+                memo: "Homelab VPS Hosting",
+                pending: false,
+              },
+              {
+                id: `demo-tx-3`,
+                posted: now - daySec * 3,
+                amount: "2850.00",
+                description: "DIRECT DEP TECH CORP SALARY",
+                payee: "TechCorp Inc",
+                memo: "Payroll Direct Deposit",
+                pending: false,
+              },
+              {
+                id: `demo-tx-4`,
+                posted: now - daySec * 4,
+                amount: "-45.00",
+                description: "CLOUDFLARE DOMAIN RENEW",
+                payee: "Cloudflare",
+                memo: "DNS & Security",
+                pending: false,
+              },
+              {
+                id: `demo-tx-5`,
+                posted: now - daySec * 5,
+                amount: "-12.40",
+                description: "STARBUCKS STORE 0841",
+                payee: "Starbucks",
+                memo: "Morning Coffee",
+                pending: false,
+              },
+            ],
+          },
+          {
+            id: "demo-capone-credit",
+            name: "Homelab Sapphire Credit Card",
+            currency: "USD",
+            balance: "-620.15",
+            "available-balance": "9379.85",
+            "balance-date": now,
+            org: { name: "Capital One", id: "capitalone" },
+            transactions: [
+              {
+                id: `demo-tx-6`,
+                posted: now - daySec * 1,
+                amount: "-129.99",
+                description: "AMAZON.COM* TECH GEAR",
+                payee: "Amazon",
+                memo: "Cat6 Ethernet Cables & Switch",
+                pending: false,
+              },
+              {
+                id: `demo-tx-7`,
+                posted: now - daySec * 3,
+                amount: "-65.30",
+                description: "SHELL OIL 49219482",
+                payee: "Shell Gas Station",
+                memo: "Fuel",
+                pending: false,
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    // Parse real SimpleFIN Access URL
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(accessUrl);
+    } catch (e) {
+      return res.status(400).json({ error: "Malformed SimpleFIN Access URL." });
+    }
+
+    const { username, password, origin, pathname } = parsedUrl;
+    
+    // Construct target /accounts URL
+    const basePath = pathname.replace(/\/+$/, "");
+    let targetUrl = `${origin}${basePath}/accounts`;
+
+    const queryParams = new URLSearchParams();
+    if (req.body.startDate) {
+      queryParams.append("start-date", String(req.body.startDate));
+    }
+    if (req.body.endDate) {
+      queryParams.append("end-date", String(req.body.endDate));
+    }
+
+    const queryString = queryParams.toString();
+    if (queryString) {
+      targetUrl += `?${queryString}`;
+    }
+
+    console.log(`[SimpleFIN] Fetching accounts from: ${origin}${basePath}/accounts`);
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+
+    if (username || password) {
+      const authHeader = Buffer.from(`${decodeURIComponent(username)}:${decodeURIComponent(password)}`).toString("base64");
+      headers["Authorization"] = `Basic ${authHeader}`;
+    }
+
+    const response = await fetch(targetUrl, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      return res.status(response.status).json({
+        error: `SimpleFIN API error (${response.status}): ${errText || response.statusText}`,
+      });
+    }
+
+    const data = await response.json();
+    return res.json({
+      success: true,
+      errors: data.errors || [],
+      accounts: data.accounts || [],
+    });
+  } catch (error: any) {
+    console.error("SimpleFIN fetch error:", error);
+    return res.status(500).json({
+      error: "Internal server error while fetching SimpleFIN bank accounts",
+      details: error.message || String(error),
+    });
+  }
+});
+
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
